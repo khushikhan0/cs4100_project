@@ -1,1 +1,1 @@
-# CS4100 Project
+# AI-Assisted Playlist Ordering to Maximize Emotional Impact
