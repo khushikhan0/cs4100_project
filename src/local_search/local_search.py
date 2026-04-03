@@ -1,4 +1,5 @@
 from enum import Enum 
+import numpy as np
 
 class EmotionCategory(Enum):
     JOY_EXCITEMENT = 'joy/excitement'
@@ -6,7 +7,21 @@ class EmotionCategory(Enum):
     CALM_PEACE = 'calm/peace'
     ANGER_TENSION = 'anger/tension'
 
+    def to_score_vector(self):
+        '''
+        Returns the raw score corresponding to this emotion label as a numpy array.
+        joy/excitement --> (1, 0, 0, 0)
+        sadness --> (0, 1, 0, 0)
+        calm/peace --> (0, 0, 1, 0)
+        anger/tension --> (0, 0, 0, 1)
+        '''
+        score_array = np.zeros(len(EmotionCategory))
+        emotion_index = list(EmotionCategory).index(self)
+        score_array[emotion_index] = 1
+        return score_array
+
 # all these functions are just for getting user input
+# btw yes I wrote everything here by hand including the docstrings, no AI used
 
 def get_user_input_songs_from_stdin() -> dict[str, dict[EmotionCategory, float]]:
     '''
@@ -51,6 +66,7 @@ def get_score_nodes_from_stdin(playlist_length) -> dict[int, EmotionCategory]:
         emotion_index = int(input(f'Enter an integer corresponding to an emotion ({print_emotion_indices_list()}): '))
         desired_emotion_nodes[index] = list(EmotionCategory)[emotion_index]
 
+    # this forces the user to add at least two nodes (beginning and end) mostly just to make our lives easier
     if 0 not in desired_emotion_nodes:
         emotion_index = int(input(f'What emotion should the playlist start with? ({print_emotion_indices_list()}) '))
         desired_emotion_nodes[0] = list(EmotionCategory)[emotion_index]
@@ -60,6 +76,8 @@ def get_score_nodes_from_stdin(playlist_length) -> dict[int, EmotionCategory]:
         desired_emotion_nodes[playlist_length-1] = list(EmotionCategory)[emotion_index]
 
     return desired_emotion_nodes
+
+# these print functions are mostly for debugging
 
 def print_out_user_songs(songs_to_scores):
     print('\n----- SONGS -----')
@@ -87,10 +105,39 @@ def handle_inputs():
     desired_emotion_nodes = get_score_nodes_from_stdin(len(songs_to_scores))
     print_out_emotion_nodes(desired_emotion_nodes, len(songs_to_scores))
     return songs_to_scores, desired_emotion_nodes
+
+# this is where the actual meat of the local search program starts
+
+def populate_emotion_scores_at_each_playlist_position(user_provided_emotion_nodes, playlist_length) -> list[np.array]:
+    '''
+    Basically takes the emotion nodes dictionary constructed from the user input and extrapolates it into a
+    list of target emotion scores at each possible index in the playlist. (Constructs the loss function we
+    want to approximate with the songs given by the user.) Returns this "loss function" as a list of numpy arrays,
+    where each item in the list represents the target emotion scores at that spot in the playlist.
+    '''
+    score_list = [None] * playlist_length
+
+    # fills in all the scores at the positions that have been specified by the user
+    for playlist_pos in user_provided_emotion_nodes:
+        score_list[playlist_pos] = user_provided_emotion_nodes[playlist_pos].to_score_vector()
+
+    # linearly interpolates between each of the nodes to fill in that values we don't have yet
+
+def fill_in_missing_scores(score_list) -> list[np.array]:
+    '''
+    The user probably didn't specify the emotion at each point in the playlist, so we have to fill in the gaps between
+    the nodes where we have emotion labels. Linearly interpolates between each node to fill in intermediate values. For
+    example, if we have (1, 0, 0, 0), ____, (0, 1, 0, 0), then we fill in the blank with (0.5, 0.5, 0, 0). Returns a new
+    copy of the list with the missing values filled in.
+    '''
+    indices_with_values = []
+    pass
     
 
 def main():
     songs_to_scores, desired_emotion_nodes = handle_inputs()
+    playlist_length = len(songs_to_scores)
+
 
 if __name__ == '__main__':
     main()
