@@ -1,5 +1,6 @@
 from enum import Enum 
 import numpy as np
+import random
 
 class EmotionCategory(Enum):
     JOY_EXCITEMENT = 'joy/excitement'
@@ -146,7 +147,7 @@ def fill_in_missing_scores(score_list) -> list[np.array]:
     # invariant: on every iteration, we add exactly one item to the new list
     # we're also guaranteed that the first and last entries already have scores provided
     for i, score in enumerate(score_list):
-        print(score_list_filled)
+        #print(score_list_filled)
         if i == indices_with_values[index_of_next_filled_index]: # if we're at a node
             score_list_filled.append(score)
             index_of_next_filled_index += 1
@@ -170,15 +171,92 @@ def fill_in_missing_scores(score_list) -> list[np.array]:
     return score_list_filled
 
 
+def convert_score_dict_to_vector(emotion_scores) -> np.array:
+    '''
+    Converts a dictionary that maps emotion categories to scores into a numpy array.
+    '''
+    l = []
+    for emotion in EmotionCategory:
+        l.append(emotion_scores[emotion])
+    return np.array(l)
+
+
+def hill_climbing(songs_to_scores, target_scores, num_iterations=1000) -> tuple[list[str], list[np.array]]:
+    '''
+    Returns the final ordering of songs in the playlist, as well as the list of the corresponding scores
+    for each song. Takes the dictionary assembled previously that maps songs to emotion score dictionaries,
+    and the list of vectors representing the target score at each position in the playlist.
+
+    Performs simple hill climbing.
+    '''
+    def get_neighboring_state(cur_list):
+        # returns a new list with two random entries swapped
+        i1 = random.randrange(0, len(cur_list))
+        i2 = i1
+        while i2 == i1:
+            i2 = random.randrange(0, len(cur_list))
+        
+        new_list = []
+        for i in range(len(cur_list)):
+            if i == i1:
+                new_list.append(cur_list[i2])
+            elif i == i2:
+                new_list.append(cur_list[i1])
+            else:
+                new_list.append(cur_list[i])
+
+        return new_list
+    
+    def judge_song_list(cur_list) -> float:
+        # returns how "good" the current playlist ordering is, with higher being better
+        # I'm calling it a fitness value instead of a score value to avoid confusion with the emotion score vectors
+        overall_fitness = 0
+        cur_scores = [convert_score_dict_to_vector(score_dict) for _, score_dict in cur_list]
+        for cur_score_array, target in zip(cur_scores, target_scores):
+            
+            # currently I'm using the normalized dot product of current score vector and the target vector
+            # as the judge of how good the current scores are
+            # I was also thinking of just taking the MSE between them instead but idk which one is better
+            dot = np.dot(cur_score_array / np.linalg.norm(cur_score_array), target / np.linalg.norm(target))
+            overall_fitness += dot
+
+        return overall_fitness
+
+    song_list = list(songs_to_scores.items())
+    #print(song_list)
+    cur_fitness = judge_song_list(song_list)
+
+    # this is just the hill climbing algorithm we went over in class
+    for i in range(num_iterations):
+        new_song_list = get_neighboring_state(song_list)
+        new_fitness = judge_song_list(new_song_list)
+        if new_fitness > cur_fitness:
+            song_list = new_song_list 
+            cur_fitness = new_fitness 
+    
+    song_names, song_scores = list(zip(*song_list))
+    return song_names, song_scores
+
+
+# this is just so the output looks nice-ish
+
+def print_output(optimal_ordering, optimal_scores):
+    print('\n----- RESULTS -----')
+    print(f'final ordering: {' --> '.join(optimal_ordering)}\n')
+    print(f'scores:')
+    for i, tup in enumerate(zip(optimal_ordering, optimal_scores)):
+        song_name, score_dict = tup
+        print(f'song {i}: {song_name}: {', '.join([str(score_dict[emotion]) + ' ' + emotion.value for emotion in EmotionCategory])}')
+
 
 
 example_songs_to_scores = {
-    'a': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'a': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0.2, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 0 },
     'b': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
-    'c': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
-    'd': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
-    'e': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
-    'f': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'c': { EmotionCategory.JOY_EXCITEMENT: 0.6, EmotionCategory.SADNESS: 1, EmotionCategory.CALM_PEACE: 0.4, EmotionCategory.ANGER_TENSION: 0 },
+    'd': { EmotionCategory.JOY_EXCITEMENT: 0.8, EmotionCategory.SADNESS: 0.8, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'e': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 1, EmotionCategory.ANGER_TENSION: 0 },
+    'f': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 1, EmotionCategory.CALM_PEACE: 0.5, EmotionCategory.ANGER_TENSION: 0 },
     'g': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
 }
 
@@ -190,20 +268,20 @@ example_desired_emotion_nodes = {
 }
 
 
+
 def main():
     #songs_to_scores, desired_emotion_nodes = handle_inputs()
 
     songs_to_scores = example_songs_to_scores
     desired_emotion_nodes = example_desired_emotion_nodes
     print_out_user_songs(songs_to_scores)
-    print_out_emotion_nodes(desired_emotion_nodes, 5)
-
+    print_out_emotion_nodes(desired_emotion_nodes, len(songs_to_scores))
 
     playlist_length = len(songs_to_scores)
     target_scores = populate_emotion_scores_at_each_playlist_position(desired_emotion_nodes, playlist_length)
-    print()
-    print(target_scores)
 
+    optimal_ordering, optimal_scores = hill_climbing(songs_to_scores, target_scores)
+    print_output(optimal_ordering, optimal_scores)
 
 if __name__ == '__main__':
     main()
