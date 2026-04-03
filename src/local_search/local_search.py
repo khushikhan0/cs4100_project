@@ -121,7 +121,8 @@ def populate_emotion_scores_at_each_playlist_position(user_provided_emotion_node
     for playlist_pos in user_provided_emotion_nodes:
         score_list[playlist_pos] = user_provided_emotion_nodes[playlist_pos].to_score_vector()
 
-    # linearly interpolates between each of the nodes to fill in that values we don't have yet
+    score_list_filled = fill_in_missing_scores(score_list)
+    return score_list_filled
 
 def fill_in_missing_scores(score_list) -> list[np.array]:
     '''
@@ -130,13 +131,78 @@ def fill_in_missing_scores(score_list) -> list[np.array]:
     example, if we have (1, 0, 0, 0), ____, (0, 1, 0, 0), then we fill in the blank with (0.5, 0.5, 0, 0). Returns a new
     copy of the list with the missing values filled in.
     '''
+    assert score_list[0] is not None, 'there should be a node at the beginning of the playlist'
+    assert score_list[-1] is not None, 'there should be a node at the end of the playlist'
+
     indices_with_values = []
-    pass
-    
+    for i, score in enumerate(score_list):
+        if score is not None:
+            indices_with_values.append(i)
+
+    score_list_filled = []
+    index_of_next_filled_index = 0 # funny confusing variable name, this is an index into indices_with_values
+    step = None
+
+    # invariant: on every iteration, we add exactly one item to the new list
+    # we're also guaranteed that the first and last entries already have scores provided
+    for i, score in enumerate(score_list):
+        print(score_list_filled)
+        if i == indices_with_values[index_of_next_filled_index]: # if we're at a node
+            score_list_filled.append(score)
+            index_of_next_filled_index += 1
+
+            # we're guaranteed the last entry has a provided score, so we exit to prevent a list index error
+            # there's probably a more elegant way to do this but idk
+            if i == len(score_list) - 1:
+                continue
+
+            # we want to transition from the current node to the next one using a constant step size in between
+            prev_specified_scores = score
+            next_specified_scores = score_list[indices_with_values[index_of_next_filled_index]]
+            pos_diff = indices_with_values[index_of_next_filled_index] - i
+            step = (next_specified_scores - prev_specified_scores) / pos_diff
+
+        else:
+            interpolated_score = score_list_filled[i-1] + step
+            score_list_filled.append(interpolated_score)
+
+    assert len(score_list_filled) == len(score_list)
+    return score_list_filled
+
+
+
+
+example_songs_to_scores = {
+    'a': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'b': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'c': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'd': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'e': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'f': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'g': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+}
+
+example_desired_emotion_nodes = {
+    0: EmotionCategory.JOY_EXCITEMENT,
+    len(example_songs_to_scores)-1: EmotionCategory.SADNESS,
+    2: EmotionCategory.ANGER_TENSION,
+    4: EmotionCategory.ANGER_TENSION
+}
+
 
 def main():
-    songs_to_scores, desired_emotion_nodes = handle_inputs()
+    #songs_to_scores, desired_emotion_nodes = handle_inputs()
+
+    songs_to_scores = example_songs_to_scores
+    desired_emotion_nodes = example_desired_emotion_nodes
+    print_out_user_songs(songs_to_scores)
+    print_out_emotion_nodes(desired_emotion_nodes, 5)
+
+
     playlist_length = len(songs_to_scores)
+    target_scores = populate_emotion_scores_at_each_playlist_position(desired_emotion_nodes, playlist_length)
+    print()
+    print(target_scores)
 
 
 if __name__ == '__main__':
