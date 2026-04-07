@@ -1,6 +1,6 @@
 pandas
-re
 matplotlib
 seaborn
 scikit-learn
 numpy
+librosa
