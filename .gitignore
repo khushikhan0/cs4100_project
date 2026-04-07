@@ -1,2 +1,4 @@
 *.npy
 data/raw/
+data/cleaned/spotify_master_clean.csv
+data/cleaned/spotify_master_clean_emotion_labels.csv
