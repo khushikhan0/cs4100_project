@@ -181,38 +181,54 @@ def convert_score_dict_to_vector(emotion_scores) -> np.array:
     return np.array(l)
 
 
-def hill_climbing(songs_to_scores, target_scores, num_iterations=1000) -> tuple[list[str], list[np.array]]:
+class LocalSearch:
     '''
-    Returns the final ordering of songs in the playlist, as well as the list of the corresponding scores
-    for each song. Takes the dictionary assembled previously that maps songs to emotion score dictionaries,
-    and the list of vectors representing the target score at each position in the playlist.
+    Represents a generic implementation of a local search algorithm.
+    '''
 
-    Performs simple hill climbing.
-    '''
-    def get_neighboring_state(cur_list):
-        # returns a new list with two random entries swapped
-        i1 = random.randrange(0, len(cur_list))
+    def __init__(self, songs_to_scores, target_scores, num_iterations=1000):
+
+        # list of (song, emotion score vector) tuples which is the current state of the local search
+        self.initial_song_list = list(songs_to_scores.items())
+
+        # list of emotion score vectors representing the target score at each playlist position
+        self.target_scores = target_scores 
+
+        self.num_iterations = num_iterations
+
+    def get_neighboring_state(self, state):
+        '''
+        Returns a neighboring state of the given one. The state is assumed to be a list of (song, emotion score
+        vector) tuples. A neighboring state is simply a state where two of the tuples in the list are swapped
+        at random.
+        '''
+        i1 = random.randrange(0, len(state))
         i2 = i1
         while i2 == i1:
-            i2 = random.randrange(0, len(cur_list))
+            i2 = random.randrange(0, len(state))
         
         new_list = []
-        for i in range(len(cur_list)):
+        for i in range(len(state)):
             if i == i1:
-                new_list.append(cur_list[i2])
+                new_list.append(state[i2])
             elif i == i2:
-                new_list.append(cur_list[i1])
+                new_list.append(state[i1])
             else:
-                new_list.append(cur_list[i])
+                new_list.append(state[i])
 
         return new_list
     
-    def judge_song_list(cur_list) -> float:
-        # returns how "good" the current playlist ordering is, with higher being better
-        # I'm calling it a fitness value instead of a score value to avoid confusion with the emotion score vectors
+    
+    def judge_song_list(self, cur_list) -> float:
+        '''
+        Returns a fitness value representing how good the current playlist ordering is, with a higher value being
+        better. I'm calling it a fitness value instead of a score value to avoid confusion with the emotion score vectors.
+        The list is assumed to be a list of (song, emotion score vector) tuples.
+        '''
+
         overall_fitness = 0
         cur_scores = [convert_score_dict_to_vector(score_dict) for _, score_dict in cur_list]
-        for cur_score_array, target in zip(cur_scores, target_scores):
+        for cur_score_array, target in zip(cur_scores, self.target_scores):
             
             # currently I'm using the normalized dot product of current score vector and the target vector
             # as the judge of how good the current scores are
@@ -221,21 +237,93 @@ def hill_climbing(songs_to_scores, target_scores, num_iterations=1000) -> tuple[
             overall_fitness += dot
 
         return overall_fitness
-
-    song_list = list(songs_to_scores.items())
-    #print(song_list)
-    cur_fitness = judge_song_list(song_list)
-
-    # this is just the hill climbing algorithm we went over in class
-    for i in range(num_iterations):
-        new_song_list = get_neighboring_state(song_list)
-        new_fitness = judge_song_list(new_song_list)
-        if new_fitness > cur_fitness:
-            song_list = new_song_list 
-            cur_fitness = new_fitness 
     
-    song_names, song_scores = list(zip(*song_list))
-    return song_names, song_scores
+    
+    def search(self) -> tuple[list[str], list[np.array]]:
+        raise Exception('e')
+    
+
+
+class HillClimbing(LocalSearch):
+    '''
+    Represents an implementation of simple hill climbing local search.
+    '''
+
+    def __init__(self, songs_to_scores, target_scores, num_iterations=100):
+        super().__init__(songs_to_scores, target_scores, num_iterations=num_iterations)
+
+
+    def search(self) -> tuple[list[str], list[np.array]]:
+        '''
+        Returns the final ordering of songs in the playlist, as well as the list of the corresponding scores
+        for each song. Takes the dictionary assembled previously that maps songs to emotion score dictionaries,
+        and the list of vectors representing the target score at each position in the playlist.
+        '''
+        song_list = self.initial_song_list
+        cur_fitness = self.judge_song_list(song_list)
+        print(f'starting fitness: {cur_fitness}')
+
+        # this is just the hill climbing algorithm we went over in class
+        for i in range(self.num_iterations):
+            new_song_list = self.get_neighboring_state(song_list)
+            new_fitness = self.judge_song_list(new_song_list)
+            if new_fitness > cur_fitness:
+                song_list = new_song_list 
+                cur_fitness = new_fitness 
+                print(f'fitness on iteration {i}: {cur_fitness}')
+        
+        song_names, song_scores = list(zip(*song_list))
+        return song_names, song_scores
+    
+
+class SimulatedAnnealing(LocalSearch):
+    '''
+    Represents an implementation of simulated annealing
+    '''
+
+    def __init__(self, songs_to_scores, target_scores, initial_temperature, decay_constant, num_iterations=1000):
+        super().__init__(songs_to_scores, target_scores, num_iterations=num_iterations)
+
+        self.initial_temperature = initial_temperature
+        self.decay_constant = decay_constant
+        
+        assert self.decay_constant >= 0 and self.decay_constant < 1
+
+
+    def search(self) -> tuple[list[str], list[np.array]]:
+        '''
+        Returns the final ordering of songs in the playlist, as well as the list of the corresponding scores
+        for each song. Takes the dictionary assembled previously that maps songs to emotion score dictionaries,
+        and the list of vectors representing the target score at each position in the playlist.
+        '''
+        song_list = self.initial_song_list
+        best_list_so_far = song_list
+        cur_energy = -1 * self.judge_song_list(song_list) # note: we want to minimize, not maximize, energy
+        temperature = self.initial_temperature
+        print(f'starting energy (+10): {cur_energy + 10}')
+
+        # this is simulated annealing as we went over it in class
+        for i in range(self.num_iterations):
+            new_song_list = self.get_neighboring_state(song_list)
+            new_energy = -1 * self.judge_song_list(new_song_list)
+
+            if new_energy < cur_energy:
+                song_list = new_song_list 
+                best_list_so_far = song_list
+                cur_energy = new_energy 
+                print(f'energy (+10) on iteration {i}: {cur_energy + 10}')
+
+            elif random.random() < np.exp((cur_energy - new_energy) / temperature):
+                song_list = new_song_list 
+                cur_energy = new_energy 
+                print(f'random move; energy (+10) on iteration {i}: {cur_energy + 10}')
+
+            #print(temperature)
+            temperature *= self.decay_constant
+        
+        song_names, song_scores = list(zip(*best_list_so_far))
+        return song_names, song_scores
+
 
 
 # this is just so the output looks nice-ish
@@ -260,6 +348,16 @@ example_songs_to_scores = {
     'g': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
 }
 
+example_songs_to_scores_1 = {
+    'a': { EmotionCategory.JOY_EXCITEMENT: 1, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 0 },
+    'b': { EmotionCategory.JOY_EXCITEMENT: 0.5, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0.5, EmotionCategory.ANGER_TENSION: 0 },
+    'c': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 1, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 0 },
+    'd': { EmotionCategory.JOY_EXCITEMENT: 0.8, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+    'e': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 1, EmotionCategory.ANGER_TENSION: 1 },
+    'f': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 1, EmotionCategory.CALM_PEACE: 0.5, EmotionCategory.ANGER_TENSION: 1 },
+    'g': { EmotionCategory.JOY_EXCITEMENT: 0, EmotionCategory.SADNESS: 0, EmotionCategory.CALM_PEACE: 0, EmotionCategory.ANGER_TENSION: 1 },
+}
+
 example_desired_emotion_nodes = {
     0: EmotionCategory.JOY_EXCITEMENT,
     len(example_songs_to_scores)-1: EmotionCategory.SADNESS,
@@ -272,7 +370,7 @@ example_desired_emotion_nodes = {
 def main():
     #songs_to_scores, desired_emotion_nodes = handle_inputs()
 
-    songs_to_scores = example_songs_to_scores
+    songs_to_scores = example_songs_to_scores_1
     desired_emotion_nodes = example_desired_emotion_nodes
     print_out_user_songs(songs_to_scores)
     print_out_emotion_nodes(desired_emotion_nodes, len(songs_to_scores))
@@ -280,7 +378,8 @@ def main():
     playlist_length = len(songs_to_scores)
     target_scores = populate_emotion_scores_at_each_playlist_position(desired_emotion_nodes, playlist_length)
 
-    optimal_ordering, optimal_scores = hill_climbing(songs_to_scores, target_scores)
+    optimal_ordering, optimal_scores = SimulatedAnnealing(songs_to_scores, target_scores, 100, 0.9).search()
+    #optimal_ordering, optimal_scores = HillClimbing(songs_to_scores, target_scores).search()
     print_output(optimal_ordering, optimal_scores)
 
 if __name__ == '__main__':
