@@ -11,9 +11,11 @@ Notebooks and scripts:
 5. [[`model.ipynb`](https://github.com/khushikhan0/cs4100_project/blob/main/src/model.ipynb)]: contains training and analysis of Convolutional Neural Network (CNN) model to predict emotional labels for songs based on spectrogram inputs.
 6. [[`cnn.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/cnn.py)]: contains the CNN class.
 7. [[`cnn_main.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/cnn_main.py)]: trains and saves the CNN model.
-8. [[`main.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/main.py)]: ...
-9. [[`spectrogram_conversion.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/spectrogram_conversion.py)]: ...
-10. [[`spectrogram_dataset.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/spectrogramdataset.py)]: contains the SpectrogramDataset class.
+8. [[`CNN_state_dict.pth`](https://github.com/khushikhan0/cs4100_project/blob/main/src/CNN_state_dict.pth)]: contains saved post-training model weights for the CNN.
+9. [[`main.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/main.py)]: runs the full pipeline. First takes any MP3 files found in src/input_mp3s and predicts emotion scores for them using the trained CNN. Then prompts the user to input where in their playlist they want certain emotions and prints out an appropriate ordering of the MP3 files.
+10. [[`spectrogram_conversion.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/spectrogram_conversion.py)]: contains helper methods for converting MP3 files to spectrograms.
+11. [[`spectrogram_dataset.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/spectrogramdataset.py)]: contains the SpectrogramDataset class.
+12. [[`local_search/local_search.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/local_search/local_search.py)]: contains all logic for ordering the songs/MP3 files using local search.
 
 ## Usage: 
 1. Clone and navigate to the repository.
