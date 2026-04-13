@@ -6,7 +6,6 @@ import torchvision.transforms as transforms
 from torch import nn
 from torch import optim
 from torch.utils.data import DataLoader
-from tqdm import tqdm
 from spectrogramdataset import SpectrogramDataset
 from cnn import CNN
 

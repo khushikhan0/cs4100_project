@@ -35,21 +35,28 @@ class CNN(nn.Module):
         self.fc1 = None
         self.sigmoid = nn.Sigmoid()
         self.n_outputs = n_outputs
+        self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc1 = nn.Linear(64, n_outputs)
 
     def forward(self, x):
         # print(f"Forward pass x shape: {x.shape}")
         n_batch, n_time_frames, n_channels, n_mels = x.shape
         x = x.reshape(n_batch, n_channels, n_mels, n_time_frames)
+
         x = F.relu(self.conv1(x))  # Apply first convolutional layer and ReLU activation func
         x = self.pool(x)           # Apply max pooling
+
         x = F.relu(self.conv2(x))  # Apply second convolutional layer and ReLU activation func
         x = self.pool(x)           # Apply max pooling
+
         x = F.relu(self.conv3(x))  # Apply third convolutional layer and ReLU activation func
         x = self.pool(x)
+        
+        x = self.global_pool(x)
         x = x.reshape(x.shape[0], -1)  # Flatten the tensor
 
-        if self.fc1 is None:
-            # Apply fully connected layer
-            self.fc1 = nn.Linear(x.shape[1], self.n_outputs).to(x.device)
+        # if self.fc1 is None:
+        #     # Apply fully connected layer
+        #     self.fc1 = nn.Linear(x.shape[1], self.n_outputs).to(x.device)
         x = self.sigmoid(self.fc1(x))
         return x
