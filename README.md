@@ -16,9 +16,18 @@ Notebooks and scripts:
 10. [[`spectrogram_dataset.py`](https://github.com/khushikhan0/cs4100_project/blob/main/src/spectrogramdataset.py)]: contains the SpectrogramDataset class.
 
 ## Usage: 
-1. Clone the repository
-2. Download the data
+1. Clone and navigate to the repository.
+```bash
+git clone https://github.com/khushikhan0/cs4100_project.git
+cd cs4100_project
+```
+2. Download the required packages.
+```bash
+pip install -r requirements.txt
+```
+4. Download the data.
 ```bash
 download_data.py
-3. Process the data
+```
+3. Process the data.
 4. 
