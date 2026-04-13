@@ -4,6 +4,6 @@ seaborn
 scikit-learn
 numpy
 librosa
-torchmetrics
-torchvision
 tqdm
+torch
+random
