@@ -32,7 +32,6 @@ pip install -r requirements.txt
 download_data.py
 ```
 3. Run main, located in `src/main.py`.
-...
 
 ## Results & Discussion:
 
