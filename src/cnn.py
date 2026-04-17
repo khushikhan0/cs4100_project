@@ -34,6 +34,7 @@ class CNN(nn.Module):
         # Fully connected layer
         self.n_outputs = n_outputs
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.sigmoid = nn.Sigmoid()
         self.fc1 = nn.Linear(64, n_outputs)
 
     def forward(self, x):
@@ -52,5 +53,5 @@ class CNN(nn.Module):
         x = self.global_pool(x)
         x = x.reshape(x.shape[0], -1)  # Flatten the tensor
 
-        x = self.fc1(x)
+        x = self.sigmoid(self.fc1(x))
         return x
