@@ -95,14 +95,14 @@ for epoch in range(num_epochs):
     data = data.to(device)
     targets = targets.to(device)
 
+    # Accumulate gradients
+    optimizer.zero_grad()
+
     # Predicted output
     preds = model(data)
 
     # Calculating Binary Cross Entropy loss
     loss = criterion(preds, targets)
-
-    # Accumulate gradients
-    optimizer.zero_grad()
 
     # Computes the gradients of the loss w.r.t. model parameters/Backward pass
     loss.backward()
