@@ -34,12 +34,6 @@ download_data.py
 3. Process the data.
 ...
 
-## Model Architecture:
-![CNN Architecture](src/cnn_architecture.png)
-The CNN contains 3 convolutional layers with ReLU activation functions and max pooling applied to each layer. Linear and Sigmoid activation functions are applied to the output of 4 different emotions: joy-excitement, peaceful-content, anger-tension, and sadness.
-
-## Data & Training:
-
 ## Results & Discussion:
 
 
