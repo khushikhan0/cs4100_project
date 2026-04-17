@@ -31,7 +31,7 @@ pip install -r requirements.txt
 ```bash
 download_data.py
 ```
-3. Process the data.
+3. Run main, located in `src/main.py`.
 ...
 
 ## Results & Discussion:
